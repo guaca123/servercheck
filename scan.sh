@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-echo "U-01: permission root login"
+echo "U-01: Permission Root Login"
 
 if [ "`cat /etc/pam.d/login | grep -i "pam_securetty.so"`" == "" ] 
 then
@@ -29,7 +28,7 @@ unset VAL
 
 
 echo ""
-echo "U-02: password complexity"
+echo "U-02: Password Complexity"
 
 passwd_config() {
     if [ `cat /etc/security/pwquality.conf | grep $1 | cut -d "=" -f2` == $2 ]
@@ -68,7 +67,7 @@ unset VAL
 
 
 echo ""
-echo "U-44: check UID"
+echo "U-44: Check UID"
 
 CNT_UID=`cat /etc/passwd | cut -d ":" -f3` # passwd UID
 CNT=0
@@ -92,7 +91,7 @@ unset UID_NUM
 
 
 echo ""
-echo "U-47: password max days"
+echo "U-47: Password Max Days"
 
 if [ `cat /etc/login.defs | grep -P "PASS_MAX_DAYS\t[0-9]+" | cut -d$'\t' -f2` -le 90 ]
 then
@@ -103,7 +102,7 @@ fi
 
 
 echo ""
-echo "U-48: password min days"
+echo "U-48: Password Min Days"
 
 if [ `cat /etc/login.defs | grep -P "PASS_MIN_DAYS\t[0-9]+" | cut -d$'\t' -f2` -ge 1 ]
 then
@@ -114,7 +113,7 @@ fi
 
 
 echo ""
-echo "U-49: check unnecessary user"
+echo "U-49: Check Unnecessary User"
 
 if [ -z `cat /etc/passwd | egrep "^lp|^uucp|^nuucp"` ]
 then
@@ -125,7 +124,7 @@ fi
 
 
 echo ""
-echo "U-52: check same UID"
+echo "U-52: Check Same UID"
 
 UID_NUM=`cat /etc/passwd | cut -d ":" -f3 | wc -l`
 UID_INSPECT=`cat /etc/passwd | cut -d ":" -f3 | uniq -u | wc -l`
@@ -141,7 +140,7 @@ unset UID_NUM
 unset UID_INSPECT
 
 echo ""
-echo "U-53: check user shell" 
+echo "U-53: Check User Shell" 
 
 USER_SHELL=`cat /etc/passwd | egrep "^daemon|^bin|^sys|^adm|^listen|^nobody|^nobody4|^noaccess|^diag|^operator|^games|^gopher" | grep -v "admin" | cut -d ":" -f7`
 MSG="...safe"
@@ -160,7 +159,7 @@ unset USER
 
 
 echo ""
-echo "U-54: session timeout"
+echo "U-54: Session Timeout"
 
 if [ -z `cat /etc/profile | grep "TMOUT="` ]
 then
@@ -180,7 +179,9 @@ else
 fi
 
 
-# file management
+echo ""
+echo "File Management"
+
 echo ""
 echo "U-06: nouser/nogroup"
 
@@ -195,9 +196,9 @@ fi
 echo ""
 echo "U-07: /etc/passwd OWN/PERM"
 
-OWN_PERM=`find /etc/passwd -user root ! -perm -133 2>/dev/null` # passwd perm 644 -le
+OWN_PERM=`find /etc/passwd -user root ! -perm /133 2>/dev/null` # passwd perm 644 -le
 MSG="...vulnerable"
-if [ $OWN_PERM == "/etc/passwd" ]
+if [ "$OWN_PERM" == "/etc/passwd" ]
 then
     MSG="...safe"
 fi
@@ -211,9 +212,9 @@ unset MSG
 echo ""
 echo "U-08: /etc/shadow OWN PERM"
 
-OWN_PERM=`find /etc/shadow -user root ! -perm -377 2>/dev/null` # shadow perm 400 -le
+OWN_PERM=`find /etc/shadow -user root ! -perm /377 2>/dev/null` # shadow perm 400 -le
 MSG="...vulnerable"
-if [ $OWN_PERM == "/etc/shadow" ]
+if [ "$OWN_PERM" == "/etc/shadow" ]
 then
     MSG="...safe"
 fi
@@ -227,9 +228,40 @@ unset MSG
 echo ""
 echo "U-09: /etc/hosts OWN PERM"
 
-OWN_PERM=`find /etc/hosts -user root ! -perm -177 2>/dev/null` # hosts perm 600 -le
+OWN_PERM=`find /etc/hosts -user root ! -perm /177 2>/dev/null` # hosts perm 600 -le
 MSG="...vulnerable"
-if [ $OWN_PERM == "/etc/hosts" ]
+if [ "$OWN_PERM" == "/etc/hosts" ]
+then
+    MSG="...safe"
+fi
+
+echo $MSG
+
+unset OWN_PERM
+unset MSG
+
+
+echo ""
+echo "U-10: /etc/xinetd.conf OWN PERM"
+
+OWN_PERM=`find /etc/xinetd.conf -user root -perm 600 2>/dev/null` # xinetd perm 600
+MSG="...vulnerable"
+if [ "$OWN_PERM" == "/etc/xinetd.conf" ]
+then
+    MSG="...safe"
+fi
+
+echo $MSG
+
+unset OWN_PERM
+unset MSG
+
+
+echo ""
+echo "U-11: /etc/rsyslog.conf OWN PERM"
+OWN_PERM=`find /etc/rsyslog.conf \( -user root -o -user bin \) ! -perm /137 2>/dev/null` #rsyslog perm 640 -le 
+MSG="...vulnerable"
+if [ "$OWN_PERM" == "/etc/rsyslog.conf" ]
 then
     MSG="...safe"
 fi
@@ -257,7 +289,7 @@ unset MSG
 
 
 echo ""
-echo "U-13: SUID/SGID file"
+echo "U-13: SUID/SGID File"
 
 for FILE in `find / -user root -type f \( -perm -04000 -o -perm -02000 \) -xdev 2>/dev/null`
 do
@@ -316,3 +348,153 @@ fi
 
 unset FILES
 unset FILE 
+
+
+echo ""
+echo "U-55: hosts.lpd OWN/PERM"
+
+FILE=`find /etc/hosts.lpd \( ! -user root -o -perm /177 \) 2>/dev/null`
+if [ "$FILE" == "" ]
+then
+    echo "...safe"
+else
+    echo "...vulnerable"
+fi
+
+unset FILE
+
+
+echo ""
+echo "U-56: Check UMASK"
+
+UMASK=`cat /etc/bashrc | grep -P "umask [0-9]+" | grep -o '[0-9]*'`
+
+MSG="...safe"
+for VAL in $UMASK
+do
+    if [ $VAL -lt 022 ] || [[ "$VAL" =~ 5 ]]
+    then
+        MSG="...vulnerable"
+    fi
+done
+
+echo $MSG
+
+unset UMASK
+unset MSG
+unset VAL
+
+
+echo ""
+echo "U-57: /home OWN/PERM"
+
+MSG="...safe"
+for USER_UID in `cat /etc/passwd | cut -d " " -f1`
+do
+    if [ `echo $USER_UID | cut -d ":" -f3` -ge 1000 ] && [ `echo $USER_UID | cut -d ":" -f3` -lt 65533 ]
+    then
+        USER=`echo $USER_UID | cut -d ":" -f1`
+        if [ -z "`find /home/$USER -user $USER ! -perm /002 -type d`" ]
+        then
+            MSG="...vulnerable"
+        fi
+    fi
+done
+
+echo $MSG
+
+unset MSG
+unset USRE_UID
+unset USER
+
+
+echo ""
+echo "U-58: /home"
+
+for USER_UID in `cat /etc/passwd | cut -d " " -f1`
+do
+    if [ `echo $USER_UID | cut -d ":" -f3` -ge 1000 ] && [ `echo $USER_UID | cut -d ":" -f3` -le 65533 ]
+    then
+        if [ `echo $USER_UID | cut -d ":" -f6` == "/" ] || [ -z `echo $USER_UID | cut -d ":" -f6` ]
+        then
+            echo "...vulnerable"
+        else
+            echo "...safe"
+        fi
+    fi
+done
+
+unset USER_UID
+
+
+echo ""
+echo "Service Management"
+
+echo ""
+echo "U-20: Anonymous FTP"
+
+FTP=`cat /etc/vsftpd/vsftpd.conf | grep "anonymous_enable" | cut -d "=" -f2`
+if [ "${FTP^^}" == "NO" ]
+then
+    echo "...safe"
+else
+    echo "...vulnerable"
+fi
+
+unset FTP
+
+
+echo ""
+echo "U-22: crond OWN/PERM"
+
+CRON=`find /usr/bin/crontab -user root ! -perm /137 2>/dev/null`
+if [ -n "$CRON" ]
+then
+    echo "...safe"
+else
+    echo "...vulnerable"
+fi
+
+unset CRON
+
+
+echo ""
+echo "U-23: DOS service "
+
+FILENAME=("echo" "discard" "daytime" "chargen")
+DGST=("dgram" "stream")
+MSG="...safe"
+
+for filename in ${FILENAME[@]}
+do
+    for dgst in ${DGST[@]}
+    do
+        GET_OPT=`cat /etc/xinetd.d/"$filename-$dgst" | grep disable | cut -d "=" -f2`
+        GET_OPT=${GET_OPT/ /}
+        GET_OPT=${GET_OPT,,}
+        if [ "$GET_OPT" != "yes" ]
+        then
+            MSG="...vulnerable"
+        fi
+    done
+done
+
+echo $MSG
+
+unset FILENAME
+unset DGST
+unset MSG
+unset filename
+unset dgst
+unset GET_OPT
+
+
+echo ""
+echo "U-24: NFS DIR List"
+
+NFS_DIR=`exportfs -v | cut -f1`
+echo "${NFS_DIR/ /\n}"
+
+unset NFS_DIR
+
+
